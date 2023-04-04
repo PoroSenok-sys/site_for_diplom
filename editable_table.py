@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, abort
 from flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
@@ -31,7 +31,7 @@ db.create_all()
 
 @app.route('/')
 def index():
-    return render_template('server_table.html')
+    return render_template('editable_table.html')
 
 
 @app.route('/api/data')
@@ -74,6 +74,19 @@ def data():
         'data': [user.to_dict() for user in query],
         'total': total,
     }
+
+
+@app.route('/api/data', methods=['POST'])
+def update():
+    data = request.get_json()
+    if 'id' not in data:
+        abort(400)
+    user = User.query.get(data['id'])
+    for field in ['name', 'age', 'address', 'phone', 'email']:
+        if field in data:
+            setattr(user, field, data[field])
+    db.session.commit()
+    return '', 204
 
 
 if __name__ == '__main__':
